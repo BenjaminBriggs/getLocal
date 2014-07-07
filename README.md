@@ -1,6 +1,6 @@
 # Getlocal
 
-TODO: Write a gem description
+A simple tool to help updating an xcode projects localizations useing the getlocalization.com API.
 
 ## Installation
 
