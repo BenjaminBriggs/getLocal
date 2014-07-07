@@ -8,7 +8,7 @@ module Getlocal
   class REST
     def self.pull(project, username, password)  
       # Set up a base for the requests
-      http = Net::HTTP.new("https://api.getlocalization.com/#{project-name}/api")
+      http = Net::HTTP.new("https://api.getlocalization.com/#{project}/api")
     
       # Get the list of translations
       request = Net::HTTP::Get.new("/list-master/json")
@@ -17,10 +17,7 @@ module Getlocal
     
       translationList = JSON.parse(response.body)
       
-      for name, name in translationList
-        #code
-      end
-      
+      puts translationList
     
       request = Net::HTTP::Post.new("/users")
       request.set_form_data({"users[login]" => "quentin"})

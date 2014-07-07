@@ -1,4 +1,5 @@
-require "getlocal/version"
+require 'getlocal/version'
+require 'getlocal/rest'
 
 module Getlocal
 
