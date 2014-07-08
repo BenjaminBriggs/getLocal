@@ -3,25 +3,45 @@
 require 'json'
 require 'net/http'
 require 'uri'
+require 'httmultiparty'
 
 module Getlocal
   class REST
-    def self.pull(project, username, password)  
-      # Set up a base for the requests
-      http = Net::HTTP.new("https://api.getlocalization.com/#{project}/api")
-    
-      # Get the list of translations
-      request = Net::HTTP::Get.new("/list-master/json")
-      request.basic_auth(username, password)
-      response = http.request(request)
-    
-      translationList = JSON.parse(response.body)
+    def self.pull(project, username, password)
       
-      puts translationList
+
+      
+    end
     
-      request = Net::HTTP::Post.new("/users")
-      request.set_form_data({"users[login]" => "quentin"})
-      response = http.request(request)
+    def self.push(project, username, password)  
+             
+      auth = {:username => username, :password => password}
+      
+      response = HTTParty.get("https://api.getlocalization.com/#{project}/api/list-master/json/", :basic_auth => auth)
+      if response.code == 200 then
+        parsedResponse = JSON.parse(response.body)
+        if parsedResponse['success'] == "1"
+          currentMasterFiles = parsedResponse['master_files']
+        end
+      end
+      
+      Dir.glob("Base.lproj/*.strings") do |stringFilePath|
+        
+        alreadyExists = currentMasterFiles.include?(stringFilePath.gsub("Base.lproj/", ""))
+          
+        body = {"file" => File.new(stringFilePath)}
+        
+        if alreadyExists
+          # Update master
+          response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/update-master/", :basic_auth => auth, :query => body)
+          puts response.code
+        else
+          #Upload new master
+          response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/create-master/iOS/en/", :basic_auth => auth, :query => body)
+          puts response.code
+        end
+        
+      end
       
     end
     
