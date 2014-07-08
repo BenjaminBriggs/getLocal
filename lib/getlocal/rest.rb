@@ -34,11 +34,9 @@ module Getlocal
         if alreadyExists
           # Update master
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/update-master/", :basic_auth => auth, :query => body)
-          puts response.code
         else
           #Upload new master
-          response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/create-master/iOS/en/", :basic_auth => auth, :query => body)
-          puts response.code
+          response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/create-master/ios/en/", :basic_auth => auth, :query => body)
         end
         
       end
