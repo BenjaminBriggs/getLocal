@@ -2,10 +2,10 @@
 
 require 'zip'
 require 'thread'
-
+require 'io/console'
+ 
 require 'thor'
 require 'httmultiparty'
-require 'highline'
 
 require 'getlocal'
 
@@ -20,14 +20,21 @@ module Getlocal
     desc "fetch [PROJECT]", "Used to fetch the latest localisations"
     def fetch(project)
       
-      puts "Wrong directory please select the directory that contains the .lproj folders" if Dir.glob('*.lproj').empty?
+      # Check if we are in the right place
+      if Dir.glob('*.lproj').empty?
+        puts "Wrong directory please select the directory that contains the .lproj folders"
+        return
+      end
       
       username = options[:user]
       
+      # Check if we need to ask for a password
       if options[:password]
         password = options[:password]
       else
-        password = ask("Password: ") { |q| q.echo = "*" }
+        print "Password:"
+        password = STDIN.noecho(&:gets).chomp
+        puts ""
       end
       
       if !options[:verbose] then
@@ -45,7 +52,7 @@ module Getlocal
       
       auth = {:username => username, :password => password}
       
-      puts "Fetching the zip"
+      puts "Fetching the zip. This may take a while" if options[:verbose]
       
       zipfile = Tempfile.new("file")
         
@@ -53,22 +60,43 @@ module Getlocal
         response = HTTParty.get("https://api.getlocalization.com/#{project}/api/translations/zip/", :basic_auth => auth, :timeout => 600)
       rescue
         puts "Oh no, somthing fucked up."
-      else 
-        puts "Creating the zip"
-        zipfile.binmode # This might not be necessary depending on the zip file
-        zipfile.write(response.body)
+        return
+      else
+        if response.code == 200
+          puts "Zip downloaded" if options[:verbose]
+          zipfile.binmode # This might not be necessary depending on the zip file
+          zipfile.write(response.body)
+        elsif response.code == 401
+          puts "The username or password are invailed"
+          return
+        else
+          puts "Bad response. Close but no cigar."
+          return
+        end
       ensure
         zipfile.close
       end
       
-      puts "Extracting the zip"
-      Zip::File.open(zipfile.path) do |zip_file|
+      puts "Extracting the zip" if options[:verbose]
+      Zip::File.open(zipfile.path) do |zipFile|
         # Handle entries one by one
-        zip_file.each do |entry|
+        zipFile.each do |entry|
           # Extract to correct location
-          puts "Extracting #{entry.name}"
+          pathComponents = entry.name.split("/")
           
-          #entry.extract(dest_file)
+          destFolder = pathComponents[0] + '.lproj'
+          destFile = pathComponents[1]
+          
+          destPath = destFolder + '/' + destFile
+          
+          if Dir.exists?(destFolder)
+            puts "Extracting #{destFile} to #{destPath}" if options[:verbose]
+            File.delete(destPath) if File.exist?(destPath)
+            entry.extract(destPath)
+          else
+            puts destFolder + " folder not found. Couldn't import " + destFile if options[:verbose]
+          end
+          
         end
       end
       
@@ -80,10 +108,13 @@ module Getlocal
     def update(project)
       username = options[:user]
       
+      # Check if we need to ask for a password
       if options[:password]
         password = options[:password]
       else
-        password = ask("Password: ") { |q| q.echo = "*" }
+        print "Password:"
+        password = STDIN.noecho(&:gets).chomp
+        puts ""
       end
       
       if !options[:verbose] then
@@ -101,21 +132,25 @@ module Getlocal
       
       auth = {:username => username, :password => password}
       
+      puts "Requesting the list of master files" if options[:verbose]
       response = HTTParty.get("https://api.getlocalization.com/#{project}/api/list-master/json/", :basic_auth => auth)
       if response.code == 200 then
         parsedResponse = JSON.parse(response.body)
         if parsedResponse['success'] == "1"
+          puts "Recived list" if options[:verbose]
           currentMasterFiles = parsedResponse['master_files']
         end
       end
       
       responceCodes = []
-        
+      
       Dir.glob("Base.lproj/*.strings") do |stringFilePath|
         
         alreadyExists = currentMasterFiles.include?(stringFilePath.gsub("Base.lproj/", ""))
           
         body = {"file" => File.new(stringFilePath)}
+         
+        puts "Uploading " + stringFilePath if options[:verbose]
         
         if alreadyExists
           # Update master
@@ -127,6 +162,8 @@ module Getlocal
           responceCodes << response.code
         end
         
+        puts "Upload complete with responce code " + response.code if options[:verbose]
+        puts "" if options[:verbose]
       end
       
         if responceCodes.include?(400)
