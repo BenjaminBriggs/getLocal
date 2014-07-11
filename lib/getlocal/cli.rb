@@ -134,12 +134,19 @@ module Getlocal
       
       puts "Requesting the list of master files" if options[:verbose]
       response = HTTParty.get("https://api.getlocalization.com/#{project}/api/list-master/json/", :basic_auth => auth)
+     
       if response.code == 200 then
         parsedResponse = JSON.parse(response.body)
         if parsedResponse['success'] == "1"
           puts "Recived list" if options[:verbose]
           currentMasterFiles = parsedResponse['master_files']
+        else
+          puts "couldn't fetch list of master files"
+          return
         end
+      else
+        puts "couldn't fetch list of master files"
+        return
       end
       
       responceCodes = []
@@ -150,19 +157,20 @@ module Getlocal
           
         body = {"file" => File.new(stringFilePath)}
          
-        puts "Uploading " + stringFilePath if options[:verbose]
         
         if alreadyExists
           # Update master
+          puts "Updateing " + stringFilePath if options[:verbose]
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/update-master/", :basic_auth => auth, :query => body)
           responceCodes << response.code
         else
           #Upload new master
+          puts "Creating " + stringFilePath if options[:verbose]
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/create-master/ios/en/", :basic_auth => auth, :query => body)
           responceCodes << response.code
         end
         
-        puts "Upload complete with responce code " + response.code if options[:verbose]
+        puts "Upload complete with responce code #{response.code}" if options[:verbose]
         puts "" if options[:verbose]
       end
       
