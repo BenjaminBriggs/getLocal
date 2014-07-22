@@ -149,8 +149,6 @@ module Getlocal
         return
       end
       
-      responceCodes = []
-      
       Dir.glob("Base.lproj/*.strings") do |stringFilePath|
         
         alreadyExists = currentMasterFiles.include?(stringFilePath.gsub("Base.lproj/", ""))
@@ -162,25 +160,15 @@ module Getlocal
           # Update master
           puts "Updateing " + stringFilePath if options[:verbose]
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/update-master/", :basic_auth => auth, :query => body)
-          responceCodes << response.code
         else
           #Upload new master
           puts "Creating " + stringFilePath if options[:verbose]
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/create-master/ios/en/", :basic_auth => auth, :query => body)
-          responceCodes << response.code
         end
         
         puts "Upload complete with responce code #{response.code}" if options[:verbose]
         puts "" if options[:verbose]
       end
-      
-        if responceCodes.include?(400)
-          puts "The request was malformed please try again"
-        elsif responceCodes.include?(404)
-          puts "The username or password are invailed"
-        else
-          puts ""
-        end
         
     end
   end
