@@ -17,7 +17,7 @@ module Getlocal
 
     method_option :user, :required => true, :aliases => "-u"
     method_option :password, :aliases => "-p"
-    method_option :timeout, :aliases => "-t"
+    method_option :timeout, :type => :numeric, :default => 600, :aliases => "-t"
     desc "fetch [PROJECT]", "Used to fetch the latest localisations"
     def fetch(project)
 
@@ -57,15 +57,8 @@ module Getlocal
 
       zipfile = Tempfile.new("file")
 
-      if options[:timeout] then
-	       timeout == options[:timeout]
-      else
-	       timeout == 600
-      end
-
       begin
-
-  	  	response = HTTParty.get("https://api.getlocalization.com/#{project}/api/translations/zip/", :basic_auth => auth, :timeout => timeout)
+  	  	response = HTTParty.get("https://api.getlocalization.com/#{project}/api/translations/zip/", :basic_auth => auth, :timeout => options[:timeout])
       rescue
         puts "Oh no, somthing fucked up."
         return
@@ -106,6 +99,7 @@ module Getlocal
           end
 
         end
+
       end
 
     end
