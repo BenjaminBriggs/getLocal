@@ -6,6 +6,7 @@ require 'io/console'
 
 require 'thor'
 require 'httmultiparty'
+require 'powerbar'
 
 require 'getlocal'
 
@@ -38,68 +39,78 @@ module Getlocal
         puts ""
       end
 
-      if !options[:verbose] then
-        Thread.new do
-          #set up spinner
-          glyphs = ['|', '/', '-', "\\"]
-          while true
-            glyphs.each do |g|
-              print "\r#{g}"
-              sleep 0.15
-            end
-          end
-        end
-      end
+      p = PowerBar.new
 
       auth = {:username => username, :password => password}
 
-      puts "Fetching the zip. This may take a while" if options[:verbose]
-
-      zipfile = Tempfile.new("file")
-
-      begin
-  	  	response = HTTParty.get("https://api.getlocalization.com/#{project}/api/translations/zip/", :basic_auth => auth, :timeout => options[:timeout])
-      rescue
-        puts "Oh no, somthing fucked up."
-        return
-      else
-        if response.code == 200
-          puts "Zip downloaded" if options[:verbose]
-          zipfile.binmode # This might not be necessary depending on the zip file
-          zipfile.write(response.body)
-        elsif response.code == 401
-          puts "The username or password are invailed"
-          return
-        else
-          puts "Bad response. Close but no cigar."
-          return
-        end
-      ensure
-        zipfile.close
+      # Find all the languages we support
+      supportedLanguages = []
+      Dir.glob("*.lproj") do |filePath|
+        f = File.basename(filePath, ".*")
+        supportedLanguages << f unless f == "Base"
       end
 
-      puts "Extracting the zip" if options[:verbose]
-      Zip::File.open(zipfile.path) do |zipFile|
-        # Handle entries one by one
-        zipFile.each do |entry|
-          # Extract to correct location
-          pathComponents = entry.name.split("/")
+      puts "Fetching localisations for" if options[:verbose]
+      puts "" if options[:verbose]
 
-          destFolder = pathComponents[0] + '.lproj'
-          destFile = pathComponents[1]
+      total = Dir.glob("Base.lproj/*.strings").count * supportedLanguages.count
+      current = 0
 
-          destPath = destFolder + '/' + destFile
+      # Loop through the string files we have localy
+      Dir.glob("Base.lproj/*.strings") do |stringFilePath|
 
-          if Dir.exists?(destFolder)
-            puts "Extracting #{destFile} to #{destPath}" if options[:verbose]
-            File.delete(destPath) if File.exist?(destPath)
-            entry.extract(destPath)
+        fileName = File.basename(stringFilePath)
+        puts "-- #{fileName} --" if options[:verbose]
+        puts "" if options[:verbose]
+
+        # Request the translations for each supported language
+        supportedLanguages.each do |lang|
+
+          current = current.next
+          p.show(:msg => 'Fetching Translation', :done => current, :total => total) unless options[:verbose]
+
+          tempfile = Tempfile.new("file")
+
+          puts "Fetching #{lang} for #{fileName}." if options[:verbose]
+          begin
+            response = HTTParty.get("https://api.getlocalization.com/#{project}/api/translations/file/#{fileName}/#{lang}/", :basic_auth => auth, :timeout => options[:timeout])
+          rescue
+            puts "Oh no, somthing fucked up."
+            return
           else
-            puts destFolder + " folder not found. Couldn't import " + destFile if options[:verbose]
+            if response.code == 200
+              puts "File downloaded" if options[:verbose]
+              tempfile.binmode # This might not be necessary depending on the zip file
+              tempfile.write(response.body)
+
+
+              destFolder = lang + ".lproj"
+              destFile = fileName
+
+              destPath = destFolder + '/' + destFile
+
+              puts "moveing translations to #{destPath}" if options[:verbose]
+
+              if Dir.exists?(destFolder)
+                File.delete(destPath) if File.exist?(destPath)
+                FileUtils.mv(tempfile.path, destPath)
+              else
+                puts destFolder + " folder not found. Couldn't import " + destFile if options[:verbose]
+              end
+            elsif response.code == 401
+              puts "The username or password are invailed"
+              return
+            else
+              puts "Bad response. Close but no cigar."
+              puts "Sorry couldn't get #{lang} translations this time."
+            end
+          ensure
+            tempfile.close
           end
-
+          puts "" if options[:verbose]
         end
-
+        puts "" if options[:verbose]
+        puts "" if options[:verbose]
       end
 
     end
@@ -156,7 +167,6 @@ module Getlocal
         alreadyExists = currentMasterFiles.include?(stringFilePath.gsub("Base.lproj/", ""))
 
         body = {"file" => File.new(stringFilePath)}
-
 
         if alreadyExists
           # Update master
