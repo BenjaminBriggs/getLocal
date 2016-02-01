@@ -101,7 +101,7 @@ module Getlocal
               puts "The username or password are invailed"
               return
             else
-              puts "Bad response. Close but no cigar."
+              puts "Bad response. Close but no cigar. Response Code = " + response.code
               puts "Sorry couldn't get #{lang} translations this time."
             end
           ensure
@@ -112,7 +112,8 @@ module Getlocal
         puts "" if options[:verbose]
         puts "" if options[:verbose]
       end
-
+      #Sleep so we don't hit the rate limiting on GetLocalization's API
+      sleep(1000)
     end
 
     method_option :user, :required => true, :aliases => "-u"
