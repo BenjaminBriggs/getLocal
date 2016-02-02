@@ -19,7 +19,7 @@ module Getlocal
     method_option :user, :required => true, :aliases => "-u"
     method_option :password, :aliases => "-p"
     method_option :timeout, :type => :numeric, :default => 600, :aliases => "-t"
-    method_option :sleep, :type => :numberic, :default => 0, :alias => "-s"
+    method_option :sleep, :type => :numeric, :default => 0, :alias => "-s"
     desc "fetch [PROJECT]", "Used to fetch the latest localisations"
     def fetch(project)
 
