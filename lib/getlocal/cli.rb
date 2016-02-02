@@ -19,6 +19,7 @@ module Getlocal
     method_option :user, :required => true, :aliases => "-u"
     method_option :password, :aliases => "-p"
     method_option :timeout, :type => :numeric, :default => 600, :aliases => "-t"
+    method_option :sleep, :type => :numberic, :default => 0, :alias => "-s"
     desc "fetch [PROJECT]", "Used to fetch the latest localisations"
     def fetch(project)
 
@@ -42,6 +43,8 @@ module Getlocal
       p = PowerBar.new
 
       auth = {:username => username, :password => password}
+      
+      sleepTime = options[:sleep]
 
       # Find all the languages we support
       supportedLanguages = []
@@ -55,7 +58,6 @@ module Getlocal
 
       total = Dir.glob("Base.lproj/*.strings").count * supportedLanguages.count
       current = 0
-      sleepTime = 1000
 
       # Loop through the string files we have localy
       Dir.glob("Base.lproj/*.strings") do |stringFilePath|
