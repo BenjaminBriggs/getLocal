@@ -19,7 +19,7 @@ module Getlocal
     method_option :user, :required => true, :aliases => "-u"
     method_option :password, :aliases => "-p"
     method_option :timeout, :type => :numeric, :default => 600, :aliases => "-t"
-    method_option :sleep, :type => :numeric, :default => 0, :alias => "-s"
+    method_option :sleep, :type => :numeric, :default => 0, :aliases => "-s"
     desc "fetch [PROJECT]", "Used to fetch the latest localisations"
     def fetch(project)
 
@@ -104,7 +104,7 @@ module Getlocal
               puts "The username or password are invailed"
               return
             else
-              puts "Bad response. Close but no cigar. Response Code = " + response.code
+              puts "Bad response. Close but no cigar. Response Code = #{response.code}"
               puts "Sorry couldn't get #{lang} translations this time."
             end
           ensure
