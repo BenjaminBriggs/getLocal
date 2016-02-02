@@ -19,7 +19,7 @@ module Getlocal
     method_option :user, :required => true, :aliases => "-u"
     method_option :password, :aliases => "-p"
     method_option :timeout, :type => :numeric, :default => 600, :aliases => "-t"
-    method_option :sleep, :type => :numeric, :default => 0, :alias => "-s"
+    method_option :sleep, :type => :numeric, :default => 0, :aliases => "-s"
     desc "fetch [PROJECT]", "Used to fetch the latest localisations"
     def fetch(project)
 
@@ -101,22 +101,23 @@ module Getlocal
                 puts destFolder + " folder not found. Couldn't import " + destFile if options[:verbose]
               end
             elsif response.code == 401
-              puts "The username or password are invailed"
+              puts "The username or password is invalid"
               return
             else
-              puts "Bad response. Close but no cigar. Response Code = " + response.code
+              puts "Bad response. Close but no cigar."
+              puts "Error #{response.code} - #{response.body}"
               puts "Sorry couldn't get #{lang} translations this time."
             end
           ensure
             tempfile.close
+          #Sleep so we don't hit the rate limiting on GetLocalization's API
+          sleep(sleepTime)
           end
           puts "" if options[:verbose]
         end
         puts "" if options[:verbose]
         puts "" if options[:verbose]
       end
-      #Sleep so we don't hit the rate limiting on GetLocalization's API
-      sleep(sleepTime)
     end
 
     method_option :user, :required => true, :aliases => "-u"
@@ -155,14 +156,14 @@ module Getlocal
       if response.code == 200 then
         parsedResponse = JSON.parse(response.body)
         if parsedResponse['success'] == "1"
-          puts "Recived list" if options[:verbose]
+          puts "Received list" if options[:verbose]
           currentMasterFiles = parsedResponse['master_files']
         else
-          puts "couldn't fetch list of master files"
+          puts "Couldn't fetch list of master files"
           return
         end
       else
-        puts "couldn't fetch list of master files"
+        puts "Couldn't fetch list of master files"
         return
       end
 
@@ -174,7 +175,7 @@ module Getlocal
 
         if alreadyExists
           # Update master
-          puts "Updateing " + stringFilePath if options[:verbose]
+          puts "Updating " + stringFilePath if options[:verbose]
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/update-master/", :basic_auth => auth, :query => body)
         else
           #Upload new master
@@ -182,7 +183,7 @@ module Getlocal
           response = HTTMultiParty.post("https://api.getlocalization.com/#{project}/api/create-master/ios/en/", :basic_auth => auth, :query => body)
         end
 
-        puts "Upload complete with responce code #{response.code}" if options[:verbose]
+        puts "Upload complete with response code #{response.code}" if options[:verbose]
         puts "" if options[:verbose]
       end
 
