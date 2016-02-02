@@ -109,14 +109,14 @@ module Getlocal
             end
           ensure
             tempfile.close
+          #Sleep so we don't hit the rate limiting on GetLocalization's API
+          sleep(sleepTime)
           end
           puts "" if options[:verbose]
         end
         puts "" if options[:verbose]
         puts "" if options[:verbose]
       end
-      #Sleep so we don't hit the rate limiting on GetLocalization's API
-      sleep(sleepTime)
     end
 
     method_option :user, :required => true, :aliases => "-u"
