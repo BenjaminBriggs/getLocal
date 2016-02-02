@@ -55,6 +55,7 @@ module Getlocal
 
       total = Dir.glob("Base.lproj/*.strings").count * supportedLanguages.count
       current = 0
+      sleepTime = 1000
 
       # Loop through the string files we have localy
       Dir.glob("Base.lproj/*.strings") do |stringFilePath|
@@ -113,7 +114,7 @@ module Getlocal
         puts "" if options[:verbose]
       end
       #Sleep so we don't hit the rate limiting on GetLocalization's API
-      sleep(1000)
+      sleep(sleepTime)
     end
 
     method_option :user, :required => true, :aliases => "-u"
